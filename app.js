@@ -34,8 +34,8 @@ app.get("/courses/:id", (req, res) => {
     const course = courseData.courses.find((x) => +x.courseId === +req.params.id);
   
     course
-      ? res.json(course)
-      : res.status(404).send("error 404, no course fouded");
+        ? res.json(course)
+        : res.status(404).send("error 404, no course fouded");
 });
   
 /* @delete[/courses/:id] */
@@ -47,10 +47,10 @@ app.delete("/courses/:id", (req, res) => {
   
     // calculate gpax
     const [ weightSum, weight ] = courseData.courses.reduce((acc, course) => {
-      acc[0] += +course.gpa * +course.credit;
-      acc[1] += +course.credit;
-  
-      return acc;
+        acc[0] += +course.gpa * +course.credit;
+        acc[1] += +course.credit;
+    
+        return acc;
     }, [ 0, 0 ]);
   
     courseData.gpax = +(weight ? weightSum / weight : 0).toFixed(2);
