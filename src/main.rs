@@ -7,11 +7,25 @@ use std::io::Cursor;
 use std::io::prelude::*;
 use rocket::response::content;
 use rocket::Response;
+use rocket::Data;
 use rocket::http::{Status, ContentType};
 use rocket_contrib::serve::StaticFiles;
 use serde_json::{Result, Value, json};
 use rocket::request::Form;
+use rocket_contrib::json::Json;
 mod gpax;
+
+#[derive(FromForm)]
+struct Course {
+    #[form(field = "courseId")]
+    course_id: String,
+    #[form(field = "courseName")]
+    course_name: String,
+    #[form(field = "credit")]
+    credit: String,
+    #[form(field = "gpa")]
+    gpa: String,
+}
 
 #[get("/")]
 fn index() -> content::Html<String> {
@@ -83,31 +97,21 @@ fn delete_courses_id(id: i64) -> content::Json<String> {
     return content::Json(res.to_string());
 }
 
-#[post("/addCourse", data = "<course>")]
-fn add_course(course: String) -> Response<'static> {
+#[post("/addCourse?<courseId>&<courseName>&<credit>&<gpa>")]
+fn add_course(courseId: u32, courseName: String, credit: u8, gpa: u8) -> Response<'static> {
     let my_courses = fs::read_to_string("myCourses.json").expect("Cannot find the specific file");
     let json: serde_json::Value = serde_json::from_str(my_courses.as_str()).expect("JSON was not well-formatted");
     let course_arr = &json["courses"];
 
     let mut res = Response::new();
     res.set_header(ContentType::JSON);
-
-    // validate
-    if !course.contains("courseId")
-    || !course.contains("courseName")
-    || !course.contains("credit")
-    || !course.contains("gpa") {
-        res.set_status(Status::new(422, "Unprocessable Entity"));
-        return res;
-    }
     
     // format req body
-    let req_course_json: serde_json::Value = serde_json::from_str(course.as_str()).expect("JSON was not well-formatted");
     let formatted_course_json = json!({
-        "courseId": req_course_json["courseId"].to_string().replace("\"", "").parse::<u32>().unwrap(),
-        "courseName": req_course_json["courseName"],
-        "credit": req_course_json["credit"].to_string().replace("\"", "").parse::<u32>().unwrap(),
-        "gpa": req_course_json["gpa"].to_string().replace("\"", "").parse::<u32>().unwrap()
+        "courseId": courseId,
+        "courseName": courseName,
+        "credit": credit,
+        "gpa": gpa
     });
 
     // create new arr

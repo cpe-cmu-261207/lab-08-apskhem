@@ -14,11 +14,8 @@ async function process() {
         e.preventDefault();
 
         const d = Object.fromEntries(new FormData(form).entries());
-        const headers = {
-            'Content-Type': 'application/json',
-        }
 
-        axios.post("/addCourse", d, { headers });
+        axios.post("/addCourse", null, { params: d });
 
         data.courses.push(d);
 
