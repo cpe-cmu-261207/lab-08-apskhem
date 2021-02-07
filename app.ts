@@ -1,12 +1,25 @@
-const express = require("express");
+import express from "express";
+import bodyParser from "body-parser";
+import fs from "fs";
+
 const app = express();
-const bodyParser = require("body-parser");
-const fs = require("fs");
 
 app.use(express.static("assets"));
 app.use(express.static("build"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+interface MyCourseJSON {
+    courses: Course[];
+    gpax: number;
+}
+
+interface Course {
+    courseId: number;
+    courseName: string;
+    credit: 1 | 2 | 3;
+    gpa: number;
+}
 
 /* @get[/] */
 app.get("/", (req, res) => {
@@ -21,7 +34,7 @@ app.get("/instruction", (req, res) => {
 /* @get[/courses] */
 app.get("/courses", (req, res) => {
     const rawdata = fs.readFileSync("myCourses.json");
-    const courseData = JSON.parse(rawdata);
+    const courseData = JSON.parse(rawdata as any);
   
     res.json(courseData);
 });
@@ -29,7 +42,7 @@ app.get("/courses", (req, res) => {
 /* @get[/courses/:id] */
 app.get("/courses/:id", (req, res) => {
     const rawdata = fs.readFileSync("myCourses.json");
-    const courseData = JSON.parse(rawdata);
+    const courseData = JSON.parse(rawdata as any) as MyCourseJSON;
   
     const course = courseData.courses.find((x) => +x.courseId === +req.params.id);
   
@@ -41,7 +54,7 @@ app.get("/courses/:id", (req, res) => {
 /* @delete[/courses/:id] */
 app.delete("/courses/:id", (req, res) => {
     const rawdata = fs.readFileSync("myCourses.json");
-    const courseData = JSON.parse(rawdata);
+    const courseData = JSON.parse(rawdata as any) as MyCourseJSON;
   
     courseData.courses = courseData.courses.filter((x) => +x.courseId !== +req.params.id);
   
@@ -63,7 +76,7 @@ app.delete("/courses/:id", (req, res) => {
 /* @post[/addCourse] */
 app.post("/addCourse", (req, res) => {
     const rawdata = fs.readFileSync("myCourses.json");
-    const courseData = JSON.parse(rawdata);
+    const courseData = JSON.parse(rawdata as any) as MyCourseJSON;
   
     // validate
     if (
@@ -81,7 +94,7 @@ app.post("/addCourse", (req, res) => {
     courseData.courses.push({
         courseId: +req.body.courseId,
         courseName: req.body.courseName,
-        credit: +req.body.credit,
+        credit: +req.body.credit as 1 | 2 | 3,
         gpa: +req.body.gpa
     });
   

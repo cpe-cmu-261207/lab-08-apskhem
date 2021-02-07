@@ -3,7 +3,8 @@ window.onload = () => {
 }
 
 async function process() {
-    const { data } = await axios.get("/courses");
+    let { data } = await axios.get("/courses");
+    data = data.data;
 
     renderForm(data);
 
@@ -13,8 +14,11 @@ async function process() {
         e.preventDefault();
 
         const d = Object.fromEntries(new FormData(form).entries());
+        const headers = {
+            'Content-Type': 'application/json',
+        }
 
-        axios.post("/addCourse", d);
+        axios.post("/addCourse", d, { headers });
 
         data.courses.push(d);
 
