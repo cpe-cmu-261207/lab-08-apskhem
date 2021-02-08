@@ -1,4 +1,4 @@
-# Week 9 : Express GPA Calculator API
+# Week 9 : ~~Express~~ Rust Rocket GPA Calculator API
 
 <b>! First clone this project and run following script below </b>
 
