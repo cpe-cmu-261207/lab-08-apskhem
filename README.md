@@ -4,13 +4,9 @@
 
 ## available script
 
-`yarn install` <br><br>
-install all node package <br><br>
-`yarn start`<br><br>
+Cargo will install all dependencies automatically.<br><br>
+`cargo run`<br><br>
 run this project without hot reload<br><br>
-`yarn dev` <br><br>
-run this project with hot reload
-<br><br>
 <b>After you successfully run this project, follow the lab instruction in http://localhost:8000/ and add your `student id` in `instruction.html` </b>
 
 Test your Restful api using Postman:
