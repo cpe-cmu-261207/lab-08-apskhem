@@ -1,60 +1,58 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use] extern crate rocket;
+#[macro_use] extern crate serde_json;
 
 use std::fs;
 use std::io::Cursor;
+use std::io::Error;
 use std::io::prelude::*;
+use std::result::Result;
+use rocket::{Data, Response};
+use rocket::request::Form;
 use rocket::response::content;
-use rocket::Response;
-use rocket::Data;
 use rocket::http::{Status, ContentType};
 use rocket_contrib::serve::StaticFiles;
-use serde_json::{Result, Value, json};
-use rocket::request::Form;
 use rocket_contrib::json::Json;
+use serde::{Serialize, Deserialize};
 mod gpax;
 
-#[derive(FromForm)]
+#[derive(Deserialize)]
 struct Course {
-    #[form(field = "courseId")]
-    course_id: String,
-    #[form(field = "courseName")]
-    course_name: String,
-    #[form(field = "credit")]
-    credit: String,
-    #[form(field = "gpa")]
-    gpa: String,
+    courseId: u32,
+    courseName: String,
+    credit: u8,
+    gpa: f32,
 }
 
 #[get("/")]
-fn index() -> content::Html<String> {
-    let html = fs::read_to_string("public/index.html").expect("Cannot find the specific file");
+fn index() -> Result<content::Html<String>, Error> {
+    let html = fs::read_to_string("public/index.html")?;
 
-    return content::Html(html);
+    return Ok(content::Html(html));
 }
 
 #[get("/instruction")]
-fn instruction() -> content::Html<String> {
-    let html = fs::read_to_string("public/instruction.html").expect("Cannot find the specific file");
+fn instruction() -> Result<content::Html<String>, Error> {
+    let html = fs::read_to_string("public/instruction.html")?;
 
-    return content::Html(html);
+    return Ok(content::Html(html));
 }
 
 #[get("/courses")]
-fn get_courses() -> content::Json<String> {
-    let my_courses = fs::read_to_string("myCourses.json").expect("Cannot find the specific file");
-    let json: serde_json::Value = serde_json::from_str(my_courses.as_str()).expect("JSON was not well-formatted");
+fn get_courses() -> Result<content::Json<String>, Error> {
+    let my_courses = fs::read_to_string("myCourses.json")?;
+    let json: serde_json::Value = serde_json::from_str(my_courses.as_str())?;
 
     let res = json!({ "success": true, "data": json });
 
-    return content::Json(res.to_string());
+    return Ok(content::Json(res.to_string()));
 }
 
 #[get("/courses/<id>")]
-fn get_courses_id(id: i64) -> Response<'static> {
-    let my_courses = fs::read_to_string("myCourses.json").expect("Something went wrong reading the file");
-    let json: serde_json::Value = serde_json::from_str(my_courses.as_str()).expect("JSON was not well-formatted");
+fn get_courses_id(id: i64) -> Result<Response<'static>, Error> {
+    let my_courses = fs::read_to_string("myCourses.json")?;
+    let json: serde_json::Value = serde_json::from_str(my_courses.as_str())?;
     let course_arr = &json["courses"];
 
     let mut res = Response::new();
@@ -63,18 +61,18 @@ fn get_courses_id(id: i64) -> Response<'static> {
     for course in course_arr.as_array().unwrap().iter() {
         if id == course["courseId"].as_i64().unwrap() {
             res.set_sized_body(Cursor::new(course.to_string()));
-            return res;
+            return Ok(res);
         }
     }
 
     res.set_status(Status::NotFound);
-    return res;
+    return Ok(res);
 }
 
 #[delete("/courses/<id>")]
-fn delete_courses_id(id: i64) -> content::Json<String> {
-    let my_courses = fs::read_to_string("myCourses.json").expect("Cannot find the specific file");
-    let json: serde_json::Value = serde_json::from_str(my_courses.as_str()).expect("JSON was not well-formatted");
+fn delete_courses_id(id: i64) -> Result<content::Json<String>, Error> {
+    let my_courses = fs::read_to_string("myCourses.json")?;
+    let json: serde_json::Value = serde_json::from_str(my_courses.as_str())?;
     let course_arr = &json["courses"];
 
     // filter out the requested id
@@ -91,16 +89,16 @@ fn delete_courses_id(id: i64) -> content::Json<String> {
     let sav = json!({ "courses": new_arr, "gpax": gpax::cal_gpax(&new_arr) });
 
     // overwrite old file
-    let mut file = fs::File::create("myCourses.json").expect("err");
-    file.write_all(sav.to_string().as_bytes()).expect("err");
+    let mut file = fs::File::create("myCourses.json")?;
+    file.write_all(sav.to_string().as_bytes())?;
 
-    return content::Json(res.to_string());
+    return Ok(content::Json(res.to_string()));
 }
 
-#[post("/addCourse?<courseId>&<courseName>&<credit>&<gpa>")]
-fn add_course(courseId: u32, courseName: String, credit: u8, gpa: u8) -> Response<'static> {
-    let my_courses = fs::read_to_string("myCourses.json").expect("Cannot find the specific file");
-    let json: serde_json::Value = serde_json::from_str(my_courses.as_str()).expect("JSON was not well-formatted");
+#[post("/addCourse", data = "<course>")]
+fn add_course(course: Json<Course>) -> Result<Response<'static>, Error> {
+    let my_courses = fs::read_to_string("myCourses.json")?;
+    let json: serde_json::Value = serde_json::from_str(my_courses.as_str())?;
     let course_arr = &json["courses"];
 
     let mut res = Response::new();
@@ -108,10 +106,10 @@ fn add_course(courseId: u32, courseName: String, credit: u8, gpa: u8) -> Respons
     
     // format req body
     let formatted_course_json = json!({
-        "courseId": courseId,
-        "courseName": courseName,
-        "credit": credit,
-        "gpa": gpa
+        "courseId": course.courseId,
+        "courseName": course.courseName,
+        "credit": course.credit,
+        "gpa": course.gpa
     });
 
     // create new arr
@@ -127,12 +125,12 @@ fn add_course(courseId: u32, courseName: String, credit: u8, gpa: u8) -> Respons
     let sav = json!({ "courses": new_arr, "gpax": gpax::cal_gpax(&new_arr) });
 
     // overwrite old file
-    let mut file = fs::File::create("myCourses.json").expect("err");
-    file.write_all(sav.to_string().as_bytes()).expect("err");
+    let mut file = fs::File::create("myCourses.json")?;
+    file.write_all(sav.to_string().as_bytes())?;
 
     res.set_status(Status::Created);
     res.set_sized_body(Cursor::new(res_text.to_string()));
-    return res;
+    return Ok(res);
 }
 
 fn main() {

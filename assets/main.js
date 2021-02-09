@@ -8,14 +8,25 @@ async function process() {
 
     renderForm(data);
 
+    const courseId = document.getElementById("courseId");
+    const courseName = document.getElementById("courseName");
+    const credit = document.getElementById("credit");
+    const gpa = document.getElementById("gpa");
     const form = document.getElementById("form");
 
     form.addEventListener("submit", (e) => {
         e.preventDefault();
 
-        const d = Object.fromEntries(new FormData(form).entries());
+        const d = {
+            courseId: courseId.valueAsNumber,
+            courseName: courseName.value,
+            credit: credit.valueAsNumber,
+            gpa: gpa.valueAsNumber,
+        };
+        
+        const headers = { "content-type": "application/json" };        
 
-        axios.post("/addCourse", null, { params: d });
+        axios.post("/addCourse", d, { headers });
 
         data.courses.push(d);
 
